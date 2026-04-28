@@ -21,6 +21,33 @@ const recipesOutput = document.getElementById("recipesOutput");
 const ingredientNames = allIngredients.map((ingredient) => ingredient.name);
 const stock = Object.fromEntries(ingredientNames.map((name) => [name, 0]));
 
+/* ============================
+   LOCAL STORAGE
+============================ */
+function saveStock() {
+  localStorage.setItem("culinaryStock", JSON.stringify(stock));
+}
+
+function loadStock() {
+  const saved = localStorage.getItem("culinaryStock");
+  if (!saved) return;
+
+  const parsed = JSON.parse(saved);
+
+  ingredientNames.forEach((name) => {
+    stock[name] = parsed[name] || 0;
+
+    const qtyInput = ingredientList.querySelector(`input[data-qty="${name}"]`);
+    const checkbox = ingredientList.querySelector(`input[data-ing="${name}"]`);
+
+    if (qtyInput) qtyInput.value = stock[name];
+    if (checkbox) checkbox.checked = stock[name] > 0;
+  });
+}
+
+/* ============================
+   QUANTITY PARSER
+============================ */
 function getRequiredQty(qtyValue) {
   if (typeof qtyValue === "number") return qtyValue;
   if (typeof qtyValue !== "string") return 0;
@@ -36,15 +63,46 @@ function getRequiredQty(qtyValue) {
   return numberMatch ? Number(numberMatch[0]) : 1;
 }
 
+/* ============================
+   INGREDIENT CONTROLS
+============================ */
+function buildIngredientControls() {
+  allIngredients.forEach((ingredient) => {
+    const row = document.createElement("div");
+    row.className = "ing-row";
 
+    const isImage = /\.(ico|png|jpg|jpeg|webp|svg)$/i.test(ingredient.icon);
+    const iconHTML = isImage
+      ? `<img src="${ingredient.icon}" class="ing-icon">`
+      : `<span class="ing-emoji">${ingredient.icon}</span>`;
 
+    row.innerHTML = `
+      <label>
+        <input type="checkbox" data-ing="${ingredient.name}">
+        ${iconHTML} ${ingredient.name}
+      </label>
+      <input type="number" data-qty="${ingredient.name}" min="0" step="1" value="0" />
+    `;
+
+    ingredientList.appendChild(row);
+  });
+}
+
+/* ============================
+   INGREDIENT CHANGE HANDLER
+============================ */
 function handleIngredientChange(event) {
-  const checkbox = event.target.closest('input[type="checkbox"]');
-  const qtyInput = event.target.closest('input[type="number"]');
+  const checkbox = event.target.matches('input[type="checkbox"]')
+    ? event.target
+    : null;
+
+  const qtyInput = event.target.matches('input[type="number"]')
+    ? event.target
+    : null;
 
   if (qtyInput) {
     const ingredientName = qtyInput.dataset.qty;
-    const value = Math.max(0, Number.parseInt(qtyInput.value || "0", 10) || 0);
+    const value = Math.max(0, parseInt(qtyInput.value, 10) || 0);
     qtyInput.value = String(value);
     stock[ingredientName] = value;
 
@@ -69,8 +127,12 @@ function handleIngredientChange(event) {
   });
 
   renderRecipes();
+  saveStock(); // ← SAVE HERE
 }
 
+/* ============================
+   RECIPE LOGIC
+============================ */
 function canCook(recipe) {
   return recipe.needs.every((item) => (stock[item.name] || 0) >= getRequiredQty(item.qty));
 }
@@ -107,8 +169,12 @@ function cookRecipe(recipeIndex) {
   });
 
   renderRecipes();
+  saveStock(); // ← SAVE AFTER COOKING
 }
 
+/* ============================
+   RENDER RECIPES
+============================ */
 function renderRecipes() {
   recipesOutput.innerHTML = "";
   const selectedIngredients = getSelectedIngredientNames();
@@ -118,14 +184,17 @@ function renderRecipes() {
     .filter(({ recipe }) => matchesSelectedIngredients(recipe, selectedIngredients));
 
   if (filteredRecipes.length === 0) {
-    recipesOutput.innerHTML = `<div class="recipe"><h3>No matching recipes</h3><p class="small">Try selecting different ingredients.</p></div>`;
+    recipesOutput.innerHTML = `
+      <div class="recipe">
+        <h3>No matching recipes</h3>
+        <p class="small">Try selecting different ingredients.</p>
+      </div>`;
     return;
   }
 
   filteredRecipes.forEach(({ recipe, index }) => {
     const complete = canCook(recipe);
     const miss = missingCount(recipe);
-    
 
     const card = document.createElement("div");
     card.className = "recipe";
@@ -134,53 +203,60 @@ function renderRecipes() {
       ? `<span class="badge can-make">Complete</span>`
       : `<span class="badge partial">Missing ${miss}</span>`;
 
-    const recipeImage = recipe.icon
-      ? `<img src="${recipe.icon}" alt="${recipe.name}" class="recipe-icon">`
+    const isImage = /\.(ico|png|jpg|jpeg|webp|svg)$/i.test(recipe.icon || "");
+    const recipeIcon = isImage
+      ? `<img src="${recipe.icon}" class="recipe-icon">`
       : "";
 
     let html = `
       <div class="recipe-header">
-        ${recipeImage}
+        ${recipeIcon}
         <h3>${recipe.name} ${badge}</h3>
       </div>
       <ul>
     `;
 
-recipe.needs.forEach((item) => {
-  const have = stock[item.name] || 0;
-  const required = getRequiredQty(item.qty);
-  const enough = have >= required;
+    recipe.needs.forEach((item) => {
+      const have = stock[item.name] || 0;
+      const required = getRequiredQty(item.qty);
+      const enough = have >= required;
 
-  const isImage = item.icon && /\.(ico|png|jpg|jpeg|webp|svg)$/i.test(item.icon);
-  const ingIcon = isImage
-    ? `<img src="${item.icon}" class="ing-icon-small">`
-    : "";
+      const isImage = item.icon && /\.(ico|png|jpg|jpeg|webp|svg)$/i.test(item.icon);
+      const ingIcon = isImage
+        ? `<img src="${item.icon}" class="ing-icon-small">`
+        : "";
 
-  html += `
-    <li class="${enough ? "ok" : "missing"}">
-      ${ingIcon} ${item.name} — need: ${item.qty}, have: ${have} ${enough ? "✓" : "✗"}
-    </li>
-  `;
-});
+      html += `
+        <li class="${enough ? "ok" : "missing"}">
+          ${ingIcon} ${item.name} — need: ${item.qty}, have: ${have} ${enough ? "✓" : "✗"}
+        </li>
+      `;
+    });
 
-
-    html += `</ul>
+    html += `
+      </ul>
       <div class="actions">
         <button ${complete ? "" : "disabled"} onclick="cookRecipe(${index})">
           Cook 1x
         </button>
         <span class="small">${complete ? "Ready to cook" : "Need more ingredients"}</span>
-      </div>`;
+      </div>
+    `;
 
     card.innerHTML = html;
     recipesOutput.appendChild(card);
   });
 }
 
+/* ============================
+   INIT
+============================ */
 function initApp() {
   buildIngredientControls();
   ingredientList.addEventListener("change", handleIngredientChange);
   ingredientList.addEventListener("input", handleIngredientChange);
+
+  loadStock();   // ← LOAD SAVED DATA
   renderRecipes();
 }
 
@@ -193,27 +269,3 @@ function loadRecipesAndStart() {
 
 window.cookRecipe = cookRecipe;
 loadRecipesAndStart();
-
-function buildIngredientControls() {
-  allIngredients.forEach((ingredient) => {
-    const row = document.createElement("div");
-    row.className = "ing-row";
-
-    const isImage = /\.(ico|png|jpg|jpeg|webp|svg)$/i.test(ingredient.icon);
-
-    const iconHTML = isImage
-      ? `<img src="${ingredient.icon}" class="ing-icon">`
-      : `<span class="ing-emoji">${ingredient.icon}</span>`;
-
-    row.innerHTML = `
-      <label>
-        <input type="checkbox" data-ing="${ingredient.name}">
-        ${iconHTML} ${ingredient.name}
-      </label>
-      <input type="number" data-qty="${ingredient.name}" min="0" step="1" value="0" />
-    `;
-
-    ingredientList.appendChild(row);
-  });
-}
-

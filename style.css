@@ -128,3 +128,15 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+.ing-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  margin-right: 6px;
+}
+
+.ing-emoji {
+  font-size: 22px;
+  margin-right: 6px;
+}

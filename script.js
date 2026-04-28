@@ -1,6 +1,6 @@
 // 14 ingredients
 const allIngredients = [
-  { name: "egg", icon: "🥚" },
+  { name: "Egg", icon: "img/Egg_Plain_Icon.ico" },
   { name: "milk", icon: "🥛" },
   { name: "flour", icon: "🌾" },
   { name: "sugar", icon: "🍬" },
@@ -188,3 +188,26 @@ function loadRecipesAndStart() {
 
 window.cookRecipe = cookRecipe;
 loadRecipesAndStart();
+
+function buildIngredientControls() {
+  allIngredients.forEach((ingredient) => {
+    const row = document.createElement("div");
+    row.className = "ing-row";
+
+    const isImage = /\.(ico|png|jpg|jpeg|webp|svg)$/i.test(ingredient.icon);
+
+    const iconHTML = isImage
+      ? `<img src="${ingredient.icon}" class="ing-icon">`
+      : `<span class="ing-emoji">${ingredient.icon}</span>`;
+
+    row.innerHTML = `
+      <label>
+        <input type="checkbox" data-ing="${ingredient.name}">
+        ${iconHTML} ${ingredient.name}
+      </label>
+      <input type="number" data-qty="${ingredient.name}" min="0" step="1" value="0" />
+    `;
+
+    ingredientList.appendChild(row);
+  });
+}

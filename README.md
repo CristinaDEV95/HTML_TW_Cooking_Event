@@ -29,8 +29,5 @@ Aplicación web simple para gestionar ingredientes y descubrir qué recetas pued
 3. Cocina una receta para descontar stock.
 4. Los datos quedan guardados localmente.
 
-## Demo
-*(Agrega tu enlace de GitHub Pages aquí)*
-
 ## Autora
 CristinaDEV95

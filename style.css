@@ -129,14 +129,36 @@ button:disabled {
   }
 }
 
-.ing-icon {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-  margin-right: 6px;
-}
 
 .ing-emoji {
   font-size: 22px;
   margin-right: 6px;
+}
+
+.ing-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  margin-right: 6px;
+}
+
+.recipe-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.recipe-icon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.ing-icon-small {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  margin-right: 6px;
+  vertical-align: middle;
 }

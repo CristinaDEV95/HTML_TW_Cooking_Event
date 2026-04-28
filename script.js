@@ -1,20 +1,20 @@
-// 14 ingredients
 const allIngredients = [
-  { name: "Egg", icon: "img/Egg_Plain_Icon.ico" },
-  { name: "milk", icon: "🥛" },
-  { name: "flour", icon: "🌾" },
-  { name: "sugar", icon: "🍬" },
-  { name: "butter", icon: "🧈" },
-  { name: "salt", icon: "🧂" },
-  { name: "tomato", icon: "🍅" },
-  { name: "onion", icon: "🧅" },
-  { name: "garlic", icon: "🧄" },
-  { name: "chicken", icon: "🍗" },
-  { name: "rice", icon: "🍚" },
-  { name: "cheese", icon: "🧀" },
-  { name: "olive oil", icon: "🫒" },
-  { name: "pepper", icon: "🌶️" }
+  { name: "Beans", icon: "img/Beans_Icon.webp" },
+  { name: "Onion", icon: "img/Onion_Icon.webp" },
+  { name: "Potato", icon: "img/Potato_Icon.webp" },
+  { name: "Bitter Melon", icon: "img/Bitter_Melon_Icon.webp" },
+  { name: "Tomato", icon: "img/Tomato_Icon.webp" },
+  { name: "Meat", icon: "img/Meat_Icon.webp" },
+  { name:"Bacon", icon:"img/Bacon_Icon.webp"},
+  { name: "Milk", icon: "img/Milk_Icon.webp" },
+  { name: "Flour", icon: "img/Flour_Icon.webp" },
+  { name: "Sugar", icon: "img/Sugar_Icon.webp" },
+  { name: "Pasta", icon: "img/Pasta_Icon.webp" },
+  { name: "Spices", icon: "img/Chili_Powder_Icon.webp" },
+  { name: "Egg", icon: "img/Egg_Icon.webp" },
+  { name: "Garlic", icon: "img/Garlic_Icon.webp" },
 ];
+
 
 const ingredientList = document.getElementById("ingredientList");
 const recipesOutput = document.getElementById("recipesOutput");
@@ -36,20 +36,7 @@ function getRequiredQty(qtyValue) {
   return numberMatch ? Number(numberMatch[0]) : 1;
 }
 
-function buildIngredientControls() {
-  allIngredients.forEach((ingredient) => {
-    const row = document.createElement("div");
-    row.className = "ing-row";
-    row.innerHTML = `
-      <label>
-        <input type="checkbox" data-ing="${ingredient.name}">
-        ${ingredient.icon} ${ingredient.name}
-      </label>
-      <input type="number" data-qty="${ingredient.name}" min="0" step="1" value="0" />
-    `;
-    ingredientList.appendChild(row);
-  });
-}
+
 
 function handleIngredientChange(event) {
   const checkbox = event.target.closest('input[type="checkbox"]');
@@ -138,6 +125,7 @@ function renderRecipes() {
   filteredRecipes.forEach(({ recipe, index }) => {
     const complete = canCook(recipe);
     const miss = missingCount(recipe);
+    
 
     const card = document.createElement("div");
     card.className = "recipe";
@@ -146,18 +134,35 @@ function renderRecipes() {
       ? `<span class="badge can-make">Complete</span>`
       : `<span class="badge partial">Missing ${miss}</span>`;
 
-    let html = `<h3>${recipe.name} ${badge}</h3><ul>`;
+    const recipeImage = recipe.icon
+      ? `<img src="${recipe.icon}" alt="${recipe.name}" class="recipe-icon">`
+      : "";
 
-    recipe.needs.forEach((item) => {
-      const have = stock[item.name] || 0;
-      const required = getRequiredQty(item.qty);
-      const enough = have >= required;
-      html += `
-        <li class="${enough ? "ok" : "missing"}">
-          ${item.name} — need: ${item.qty}, have: ${have} ${enough ? "✓" : "✗"}
-        </li>
-      `;
-    });
+    let html = `
+      <div class="recipe-header">
+        ${recipeImage}
+        <h3>${recipe.name} ${badge}</h3>
+      </div>
+      <ul>
+    `;
+
+recipe.needs.forEach((item) => {
+  const have = stock[item.name] || 0;
+  const required = getRequiredQty(item.qty);
+  const enough = have >= required;
+
+  const isImage = item.icon && /\.(ico|png|jpg|jpeg|webp|svg)$/i.test(item.icon);
+  const ingIcon = isImage
+    ? `<img src="${item.icon}" class="ing-icon-small">`
+    : "";
+
+  html += `
+    <li class="${enough ? "ok" : "missing"}">
+      ${ingIcon} ${item.name} — need: ${item.qty}, have: ${have} ${enough ? "✓" : "✗"}
+    </li>
+  `;
+});
+
 
     html += `</ul>
       <div class="actions">
@@ -211,3 +216,4 @@ function buildIngredientControls() {
     ingredientList.appendChild(row);
   });
 }
+

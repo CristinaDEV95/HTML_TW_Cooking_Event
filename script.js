@@ -5,10 +5,13 @@ const ingredientById = Object.fromEntries(allIngredients.map((ing) => [ing.id, i
 
 const ingredientList = document.getElementById("ingredientList");
 const recipesOutput = document.getElementById("recipesOutput");
+const selectedEventLocked = document.getElementById("selectedEventLocked");
+const headerBanner = document.getElementById("headerBanner");
 
 /** Names of ingredients shown for this page (from `body` id → events.js `id`). */
 let ingredientNames = [];
 let stock = {};
+let activeEventId = null;
 
 function getCurrentPageFilename() {
   let path = window.location.pathname.split("/").pop() || "";
@@ -16,37 +19,69 @@ function getCurrentPageFilename() {
   return path;
 }
 
-/** Prefer matching `culinaryEvents[].href` so IDs stay in sync with events.js (body id is fallback). */
-function getCurrentEventId() {
-  const path = getCurrentPageFilename();
-  const norm = (s) => String(s || "").toLowerCase();
+function getSelectedEventId() {
+  if (activeEventId) return activeEventId;
 
-  if (typeof culinaryEvents !== "undefined" && culinaryEvents.length) {
-    const hit = culinaryEvents.find((ev) => {
-      return (
-        norm(path) === norm(ev.href) ||
-        (norm(ev.href) === "index.html" &&
-          (norm(path) === "" || norm(path) === "index.html"))
-      );
-    });
-    if (hit != null && hit.id !== undefined && hit.id !== "") {
-      return String(hit.id);
-    }
-  }
+  const saved = localStorage.getItem("culinaryActiveEventId");
+  if (saved) return saved;
 
   const bid = document.body.id || "";
   const m = bid.match(/^page-event-(.+)$/i);
-  return m ? m[1] : null;
+  if (m) return m[1];
+
+  if (typeof culinaryEvents !== "undefined" && culinaryEvents.length) return String(culinaryEvents[0].id);
+  return null;
+}
+
+function setSelectedEventId(id) {
+  activeEventId = String(id);
+  localStorage.setItem("culinaryActiveEventId", activeEventId);
+  applySelectedEvent();
+}
+
+function getSelectedEvent() {
+  const eid = getSelectedEventId();
+  if (!eid || typeof culinaryEvents === "undefined") return null;
+  return culinaryEvents.find((e) => String(e.id) === String(eid)) || null;
+}
+
+function applySelectedEvent() {
+  const ev = getSelectedEvent();
+
+  if (ev && headerBanner && ev.imageHeader) {
+    headerBanner.src = ev.imageHeader;
+  }
+
+  if (selectedEventLocked) {
+    if (!ev) {
+      selectedEventLocked.innerHTML = `<div class="small">No event selected</div>`;
+    } else {
+      selectedEventLocked.innerHTML = `
+        <img class="locked-card-image" src="${ev.image}" alt="" loading="lazy">
+        <div class="locked-card-title">${ev.title}</div>
+        <div class="small">ID: ${ev.id}</div>
+      `;
+    }
+  }
+
+  syncVisibleIngredientNames();
+
+  ingredientList.innerHTML = "";
+  buildIngredientControls();
+  loadStock();
+  renderRecipes();
+
+  renderEvents();
 }
 
 function ingredientMatchesEvent(ing) {
-  const eid = getCurrentEventId();
+  const eid = getSelectedEventId();
   if (!eid) return true;
   return Array.isArray(ing.eventID) && ing.eventID.includes(eid);
 }
 
 function recipeMatchesEvent(recipe) {
-  const eid = getCurrentEventId();
+  const eid = getSelectedEventId();
   if (!eid) return true;
   return Array.isArray(recipe.eventID) && recipe.eventID.length > 0 && recipe.eventID.includes(eid);
 }
@@ -84,40 +119,26 @@ function renderEvents() {
   const grid = document.getElementById("eventsGrid");
   if (!grid || typeof culinaryEvents === "undefined") return;
 
-  const path = getCurrentPageFilename();
-  const norm = (s) => String(s || "").toLowerCase();
-
   grid.innerHTML = "";
+  const selectedId = getSelectedEventId();
 
   culinaryEvents.forEach((ev) => {
-    const isCurrent =
-      norm(path) === norm(ev.href) ||
-      (norm(ev.href) === "index.html" &&
-        (norm(path) === "" || norm(path) === "index.html"));
+    const isCurrent = String(ev.id) === String(selectedId);
 
     const inner = `
       <img src="${ev.image}" alt="" class="event-card-image" loading="lazy" width="320" height="120">
       <span class="event-card-title">${ev.title}</span>
-      ${isCurrent ? `<span class="event-card-badge">Current</span>` : ""}
+      ${isCurrent ? `<span class="event-card-badge">Selected</span>` : ""}
     `;
 
-    if (!ev.href || isCurrent) {
-      const div = document.createElement("div");
-      div.className = `event-card${isCurrent ? " is-current" : ""}`;
-      div.id = `guide-event-${ev.id}`;
-      div.dataset.eventId = ev.id;
-      div.innerHTML = inner;
-      grid.appendChild(div);
-      return;
-    }
-
-    const a = document.createElement("a");
-    a.className = "event-card";
-    a.id = `guide-event-${ev.id}`;
-    a.href = ev.href;
-    a.dataset.eventId = ev.id;
-    a.innerHTML = inner;
-    grid.appendChild(a);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `event-card-btn${isCurrent ? " is-current" : ""}`;
+    btn.id = `guide-event-${ev.id}`;
+    btn.dataset.eventId = ev.id;
+    btn.innerHTML = inner;
+    btn.addEventListener("click", () => setSelectedEventId(ev.id));
+    grid.appendChild(btn);
   });
 }
 
@@ -176,7 +197,18 @@ function getRequiredQty(qtyValue) {
    INGREDIENT CONTROLS
 ============================ */
 function buildIngredientControls() {
-  ingredientsForCurrentEvent().forEach((ingredient) => {
+  const list = ingredientsForCurrentEvent();
+  if (list.length === 0) {
+    ingredientList.innerHTML = `
+      <div class="recipe" style="grid-column: 1 / -1;">
+        <h3>No ingredients for this event</h3>
+        <p class="small">Add this event id to <code>eventID</code> inside <code>ingredients.js</code>.</p>
+      </div>
+    `;
+    return;
+  }
+
+  list.forEach((ingredient) => {
     const row = document.createElement("div");
     row.className = "ing-row";
     row.id = `guide-ing-${ingredient.id}`;
@@ -378,22 +410,15 @@ function renderRecipes() {
    INIT
 ============================ */
 function initApp() {
-  syncVisibleIngredientNames();
-
-  renderEvents();
-
-  ingredientList.innerHTML = "";
-  buildIngredientControls();
+  // Pick selected event first, then render everything for that event.
+  activeEventId = getSelectedEventId();
+  applySelectedEvent();
 
   if (!ingredientList.dataset.listenersAttached) {
     ingredientList.addEventListener("change", handleIngredientChange);
     ingredientList.addEventListener("input", handleIngredientChange);
     ingredientList.dataset.listenersAttached = "1";
   }
-
-  stock = {};
-  loadStock();
-  renderRecipes();
 }
 
 function loadRecipesAndStart() {

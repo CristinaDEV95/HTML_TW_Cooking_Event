@@ -6,12 +6,68 @@
 }
 
 body {
-  max-width: 900px;
+  max-width: 1180px;
   margin: 24px auto;
   padding: 0 20px 40px;
   background: linear-gradient(135deg, #c2a67a 0%, #8a5a3a 100%);
   color: #2a1c12;
   font-family: "Inter", "Segoe UI", sans-serif;
+}
+
+.app-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.side-panel {
+  position: sticky;
+  top: 18px;
+}
+
+.side-panel-inner {
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  padding: 14px;
+}
+
+.side-panel-title {
+  font-weight: 800;
+  color: #fdf7ef;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  margin-bottom: 12px;
+}
+
+.side-panel-title-small {
+  margin-top: 14px;
+  font-size: 0.95rem;
+}
+
+.locked-card {
+  background: #fdf7ef;
+  border-radius: 12px;
+  border: 1px solid #d8c7b3;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.locked-card-image {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #d8c7b3;
+  background: #fff;
+}
+
+.locked-card-title {
+  font-weight: 800;
 }
 .glass-header {
   width: 100%;
@@ -236,6 +292,14 @@ button:disabled {
    RESPONSIVE
    ============================ */
 @media (max-width: 640px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .side-panel {
+    position: static;
+  }
+
   .ingredients {
     grid-template-columns: 1fr;
   }
@@ -269,12 +333,14 @@ button:disabled {
   gap: 14px;
 }
 
-a.event-card {
-  text-decoration: none;
-  color: inherit;
+/* Left-side selector list */
+.events-grid--side {
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
 
-.event-card {
+.event-card,
+.event-card-btn {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -286,12 +352,27 @@ a.event-card {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-a.event-card:hover {
+.event-card-btn {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.events-grid--side .event-card-btn {
+  padding: 10px;
+}
+
+.events-grid--side .event-card-badge {
+  align-self: flex-start;
+}
+
+.event-card-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.16);
 }
 
-.event-card.is-current {
+.event-card.is-current,
+.event-card-btn.is-current {
   outline: 2px solid #8a5a3a;
   outline-offset: 2px;
 }
@@ -303,6 +384,14 @@ a.event-card:hover {
   border-radius: 8px;
   border: 1px solid #d8c7b3;
   background: #fff;
+}
+
+.events-grid--side .event-card-image {
+  height: 64px;
+}
+
+.events-grid--side .event-card-title {
+  font-size: 0.9rem;
 }
 
 .event-card-title {

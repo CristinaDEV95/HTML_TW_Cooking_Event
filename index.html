@@ -8,29 +8,36 @@
   <link rel="stylesheet" href="style.css" />
 
 </head>
-<body id="page-event-03">
+<body id="page-base">
 <header id="guide-banner" class="glass-header">
-  <img src="img_header/3_The_Culinary_Crucible_-_The_Beaning_of_Life.webp" class="header-banner" alt="">
+  <img id="headerBanner" src="img_header/3_The_Culinary_Crucible_-_The_Beaning_of_Life.webp" class="header-banner" alt="">
 </header>
 
-  <main id="guide-main">
-    <h1 id="guide-page-title">Recipe Finder</h1>
+  <div class="app-layout">
+    <aside id="selectedEventPanel" class="side-panel" aria-label="Selected event">
+      <div class="side-panel-inner">
+        <div class="side-panel-title">Selected event</div>
+        <div id="selectedEventLocked" class="locked-card"></div>
 
-    <section id="guide-events" class="events-section" aria-labelledby="events-heading">
-      <h2 id="events-heading">Culinary Crucible events</h2>
-      <div id="eventsGrid" class="events-grid"></div>
-    </section>
+        <div class="side-panel-title side-panel-title-small">Events</div>
+        <div id="eventsGrid" class="events-grid events-grid--side"></div>
+      </div>
+    </aside>
 
-    <section id="guide-ingredients" aria-labelledby="stock-intro">
-      <p id="stock-intro">Select ingredients and set your stock quantity:</p>
-      <div id="ingredientList" class="ingredients"></div>
-    </section>
+    <main id="guide-main">
+      <h1 id="guide-page-title">Recipe Finder</h1>
 
-    <section id="guide-recipes" aria-labelledby="recipes-heading">
-      <h2 id="recipes-heading">Recipes</h2>
-      <div id="recipesOutput"></div>
-    </section>
-  </main>
+      <section id="guide-ingredients" aria-labelledby="stock-intro">
+        <p id="stock-intro">Select ingredients and set your stock quantity:</p>
+        <div id="ingredientList" class="ingredients"></div>
+      </section>
+
+      <section id="guide-recipes" aria-labelledby="recipes-heading">
+        <h2 id="recipes-heading">Recipes</h2>
+        <div id="recipesOutput"></div>
+      </section>
+    </main>
+  </div>
   
 
 <script src="ingredients.js"></script>

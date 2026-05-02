@@ -13,6 +13,34 @@ let ingredientNames = [];
 let stock = {};
 let activeEventId = null;
 
+const RECIPE_RATINGS_STORAGE_KEY = "culinaryRecipeRatings";
+
+function loadRecipeRatings() {
+  const raw = localStorage.getItem(RECIPE_RATINGS_STORAGE_KEY);
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function saveRecipeRatings(ratings) {
+  localStorage.setItem(RECIPE_RATINGS_STORAGE_KEY, JSON.stringify(ratings || {}));
+}
+
+function recipeKey(recipe, index) {
+  const rid = String(recipe?.id || "").trim();
+  return rid ? rid : `idx-${index}`;
+}
+
+function getRecipeRating(ratings, key) {
+  const v = Number(ratings?.[key] ?? 0);
+  if (v === 1 || v === 2 || v === 3) return v;
+  return 0;
+}
+
 function getCurrentPageFilename() {
   let path = window.location.pathname.split("/").pop() || "";
   if (!path) path = "index.html";
@@ -39,6 +67,46 @@ function setSelectedEventId(id) {
   applySelectedEvent();
 }
 
+function applyThemeForEventId(eid) {
+  const id = String(eid || "");
+  // Palette pulled from the provided swatches (approx).
+  const palette = {
+    green: "#7ddc1f",
+    blue: "#1a73e8",
+    purple: "#4b49c8",
+    maroon: "#8b3a43",
+    gray: "#aeb7c3",
+    yellow: "#d3a315",
+    red: "#cc2b21",
+  };
+
+  // Two-color gradients per version.
+  const themes = {
+    // version 01: red + green
+    "01": [palette.red, palette.green],
+    // version 02: red + maroon ("red burden")
+    "02": [palette.red, palette.maroon],
+    // version 03: green + gray
+    "03": [palette.green, palette.gray],
+    // version 04: blue + yellow
+    "04": [palette.red, palette.maroon],
+    // version 05: purple + red
+    "05": [palette.green, palette.yellow],
+    // version 06: yellow + gray
+    "06": [palette.purple, palette.red],
+    // version 07: blue + green
+    "07": [palette.gray, palette.green],
+    "08": [palette.blue, palette.red],
+    "09": [palette.yellow, palette.purple],
+    "10": [palette.yellow, palette.purple],
+    "11": [palette.gray, palette.blue],
+  };
+
+  const pair = themes[id] || themes["01"];
+  document.body.style.setProperty("--theme-a", pair[0]);
+  document.body.style.setProperty("--theme-b", pair[1]);
+}
+
 function getSelectedEvent() {
   const eid = getSelectedEventId();
   if (!eid || typeof culinaryEvents === "undefined") return null;
@@ -47,6 +115,7 @@ function getSelectedEvent() {
 
 function applySelectedEvent() {
   const ev = getSelectedEvent();
+  applyThemeForEventId(ev?.id || getSelectedEventId());
 
   if (ev && headerBanner && ev.imageHeader) {
     headerBanner.src = ev.imageHeader;
@@ -283,6 +352,21 @@ function missingCount(recipe) {
   return recipe.needs.filter((item) => (stock[item.name] || 0) < getRequiredQty(item.qty)).length;
 }
 
+function completionPercent(recipe) {
+  if (!recipe?.needs?.length) return 0;
+  let total = 0;
+  let haveEnough = 0;
+
+  recipe.needs.forEach((item) => {
+    total += 1;
+    const have = stock[item.name] || 0;
+    const required = getRequiredQty(item.qty);
+    if (have >= required) haveEnough += 1;
+  });
+
+  return total === 0 ? 0 : Math.round((haveEnough / total) * 100);
+}
+
 function getSelectedIngredientNames() {
   return ingredientNames.filter((ingredientName) => (stock[ingredientName] || 0) > 0);
 }
@@ -321,6 +405,7 @@ function cookRecipe(recipeIndex) {
 function renderRecipes() {
   recipesOutput.innerHTML = "";
   const selectedIngredients = getSelectedIngredientNames();
+  const ratings = loadRecipeRatings();
 
   const forEvent = recipes
     .map((recipe, index) => ({ recipe, index }))
@@ -348,14 +433,31 @@ function renderRecipes() {
     return;
   }
 
-  filteredRecipes.forEach(({ recipe, index }) => {
+  const decorated = filteredRecipes
+    .map(({ recipe, index }, pos) => {
+      const key = recipeKey(recipe, index);
+      const rating = getRecipeRating(ratings, key);
+      return { recipe, index, pos, key, rating };
+    })
+    // When 3 stars → push to bottom of list for that event.
+    .sort((a, b) => {
+      const aDown = a.rating === 3 ? 1 : 0;
+      const bDown = b.rating === 3 ? 1 : 0;
+      if (aDown !== bDown) return aDown - bDown;
+      return a.pos - b.pos;
+    });
+
+  decorated.forEach(({ recipe, index, key, rating }) => {
     const complete = canCook(recipe);
     const miss = missingCount(recipe);
+    const pct = completionPercent(recipe);
 
     const card = document.createElement("div");
-    card.className = "recipe";
+    card.className = `recipe is-enter${complete ? " recipe--ready" : ""}`;
     card.id = recipe.id ? `guide-recipe-${recipe.id}` : `guide-recipe-idx-${index}`;
     card.dataset.recipeId = recipe.id || "";
+    card.dataset.recipeKey = key;
+    card.style.setProperty("--progress", String(pct));
 
     const badge = complete
       ? `<span class="badge can-make">Complete</span>`
@@ -366,11 +468,38 @@ function renderRecipes() {
       ? `<img src="${recipe.icon}" class="recipe-icon" alt="">`
       : "";
 
+    const starButton = (n) => `
+      <button
+        type="button"
+        class="star-btn${rating >= n ? " is-on" : ""}"
+        aria-label="Set rating to ${n} star${n === 1 ? "" : "s"}"
+        data-star="${n}"
+      >★</button>
+    `;
+
     let html = `
       <div class="recipe-header">
         ${recipeIcon}
-        <h3>${recipe.name} ${badge}</h3>
+        <div class="recipe-header-main">
+          <h3>${recipe.name} ${badge}</h3>
+          <div class="recipe-rating" role="radiogroup" aria-label="Recipe rating">
+            ${starButton(1)}${starButton(2)}${starButton(3)}
+          </div>
+          <div class="recipe-progress" aria-label="Completion progress">
+            <div class="recipe-progress-track" aria-hidden="true">
+              <div class="recipe-progress-fill"></div>
+            </div>
+            <div class="recipe-progress-meta">
+              <span>${pct}% ready</span>
+              <span>${complete ? "Cookable" : `Missing ${miss}`}</span>
+            </div>
+          </div>
+        </div>
       </div>
+    `;
+
+    html += `<details class="recipe-details" ${complete ? "open" : ""}>
+      <summary>Ingredients</summary>
       <ul>
     `;
 
@@ -393,6 +522,7 @@ function renderRecipes() {
 
     html += `
       </ul>
+      </details>
       <div class="actions">
         <button ${complete ? "" : "disabled"} onclick="cookRecipe(${index})">
           Cook 1x
@@ -402,6 +532,18 @@ function renderRecipes() {
     `;
 
     card.innerHTML = html;
+    // Allow the "enter" animation to re-run on updates.
+    requestAnimationFrame(() => card.classList.remove("is-enter"));
+    card.querySelectorAll(".star-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const n = Number(btn.dataset.star || 0);
+        const next = n === 1 || n === 2 || n === 3 ? n : 0;
+        const nextRatings = loadRecipeRatings();
+        nextRatings[key] = next;
+        saveRecipeRatings(nextRatings);
+        renderRecipes();
+      });
+    });
     recipesOutput.appendChild(card);
   });
 }

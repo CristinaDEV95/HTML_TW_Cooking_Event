@@ -9,7 +9,12 @@ body {
   max-width: 1180px;
   margin: 24px auto;
   padding: 0 20px 40px;
-  background: linear-gradient(135deg, #c2a67a 0%, #8a5a3a 100%);
+  --theme-a: #cc2b21;
+  --theme-b: #7ddc1f;
+  background:
+    radial-gradient(1000px 520px at 20% 0%, color-mix(in srgb, var(--theme-a) 32%, transparent), transparent 65%),
+    radial-gradient(980px 520px at 80% 10%, color-mix(in srgb, var(--theme-b) 30%, transparent), transparent 62%),
+    linear-gradient(135deg, color-mix(in srgb, var(--theme-a) 25%, #c2a67a) 0%, color-mix(in srgb, var(--theme-b) 25%, #8a5a3a) 100%);
   color: #2a1c12;
   font-family: "Inter", "Segoe UI", sans-serif;
 }
@@ -32,6 +37,10 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   padding: 14px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 48px);
+  overflow: hidden;
 }
 
 .side-panel-title {
@@ -107,9 +116,9 @@ h1 {
 .ingredients {
   display: grid;
   grid-template-columns: repeat(3, minmax(180px, 1fr));
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 24px;
-  padding: 16px;
+  padding: 12px;
   border-radius: 14px;
   background: rgba(255,255,255,0.15);
   backdrop-filter: blur(8px);
@@ -123,7 +132,7 @@ h1 {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-radius: 10px;
   background: #f6eee4;
   border: 1px solid #d8c7b3;
@@ -140,15 +149,17 @@ h1 {
   align-items: center;
   gap: 8px;
   font-weight: 600;
+  font-size: 0.92rem;
 }
 
 .ing-row input[type="number"] {
-  width: 70px;
-  padding: 6px;
+  width: 58px;
+  padding: 5px;
   border-radius: 6px;
   border: 1px solid #bfa88f;
   background: #fff;
   font-weight: 600;
+  font-size: 0.9rem;
 }
 
 /* ============================
@@ -167,11 +178,35 @@ h1 {
   border: 1px solid #d8c7b3;
   box-shadow: 0 4px 10px rgba(0,0,0,0.12);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .recipe:hover {
   transform: translateY(-3px);
   box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+}
+
+.recipe.is-enter {
+  animation: recipeIn 220ms ease-out both;
+}
+
+@keyframes recipeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.recipe.recipe--ready {
+  border-color: rgba(31, 122, 69, 0.35);
+  box-shadow: 0 10px 26px rgba(31, 122, 69, 0.12), 0 6px 14px rgba(0,0,0,0.14);
+}
+
+.recipe.recipe--ready::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(1200px 220px at 30% 0%, rgba(31, 122, 69, 0.14), transparent 60%);
+  pointer-events: none;
 }
 
 /* Recipe Header */
@@ -235,6 +270,78 @@ h1 {
   color: #664d03;
 }
 
+/* Progress bar (how close to cooking) */
+.recipe-progress {
+  margin-top: 10px;
+}
+
+.recipe-progress-track {
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.recipe-progress-fill {
+  height: 100%;
+  width: calc(var(--progress, 0) * 1%);
+  background: linear-gradient(90deg, rgba(138, 90, 58, 0.85), rgba(31, 122, 69, 0.85));
+  border-radius: 999px;
+  transition: width 180ms ease-out;
+}
+
+.recipe-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6b5a4a;
+  font-weight: 700;
+}
+
+/* Ingredients section inside recipe */
+.recipe-details {
+  margin-top: 12px;
+  border-top: 1px dashed rgba(110, 69, 44, 0.28);
+  padding-top: 10px;
+}
+
+.recipe-details summary {
+  cursor: pointer;
+  user-select: none;
+  font-weight: 800;
+  color: #6e452c;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recipe-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.recipe-details summary::before {
+  content: "▸";
+  display: inline-block;
+  transform: translateY(-1px);
+  transition: transform 160ms ease;
+}
+
+.recipe-details[open] summary::before {
+  transform: rotate(90deg) translateX(1px);
+}
+
+.recipe ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
+.recipe li {
+  margin: 6px 0;
+  line-height: 1.35;
+}
+
 /* ============================
    ACTIONS
    ============================ */
@@ -282,8 +389,8 @@ button:disabled {
 }
 
 .ing-icon {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   object-fit: contain;
   margin-right: 6px;
 }
@@ -337,6 +444,84 @@ button:disabled {
 .events-grid--side {
   grid-template-columns: 1fr;
   gap: 10px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+/* Scrollbar styling (left-side menu) */
+.events-grid--side {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(253, 247, 239, 0.75) rgba(0, 0, 0, 0.15);
+}
+
+.events-grid--side::-webkit-scrollbar {
+  width: 10px;
+}
+
+.events-grid--side::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 999px;
+}
+
+.events-grid--side::-webkit-scrollbar-thumb {
+  background: rgba(253, 247, 239, 0.75);
+  border-radius: 999px;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+}
+
+.events-grid--side::-webkit-scrollbar-thumb:hover {
+  background: rgba(253, 247, 239, 0.9);
+}
+
+/* ============================
+   RECIPE STAR RATING
+   ============================ */
+.recipe-header {
+  align-items: flex-start;
+}
+.event-card-title {
+  color:#c2c2c2
+}
+
+.recipe-header-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.recipe-rating {
+  display: inline-flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.star-btn {
+  appearance: none;
+  border: 1px solid rgba(138, 90, 58, 0.25);
+  background: rgba(138, 90, 58, 0.06);
+  color: rgba(110, 69, 44, 0.45);
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 10px;
+  font-size: 18px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.star-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(138, 90, 58, 0.12);
+  border-color: rgba(138, 90, 58, 0.35);
+  color: rgba(110, 69, 44, 0.8);
+}
+
+.star-btn.is-on {
+  background: rgba(138, 90, 58, 0.22);
+  border-color: rgba(138, 90, 58, 0.5);
+  color: #8a5a3a;
 }
 
 .event-card,

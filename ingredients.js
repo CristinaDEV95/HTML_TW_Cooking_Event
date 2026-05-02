@@ -22,7 +22,7 @@ const allIngredients = [
   {id: "bread_crumbs", name: "Bread Crumbs", icon: "img/Bread_Crumbs_Icon.webp", eventID: ["04"]},
   { id: "spices", name: "Spices", icon: "img/Chili_Powder_Icon.webp", eventID: ["03", "04"] },
   { id: "egg", name: "Egg", icon: "img/Egg_Icon.webp", eventID: ["03", "04"] },
-  {id: "consomme", name: "Consomme", icon: "img/consomme_Icon.webp", eventID: ["04"]},
+  {id: "consomme", name: "Consomme", icon: "img/Consomme_Icon.webp", eventID: ["04"]},
   {id: "shellfish", name: "Shellfish", icon: "img/Shellfish_Icon.webp", eventID: ["04"]},
 
   { id: "potato", name: "Potato", icon: "img/Potato_Icon.webp", eventID: ["03"] },
